@@ -1,0 +1,43 @@
+name: Build patched debugger plugin
+
+# Pushing to patched-0.53.2 rebuilds the plugin jar and updates the release asset,
+# keeping tag 0.53.2-patched pointing at the exact source of the published jar.
+on:
+  push:
+    branches: [patched-0.53.2]
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+          cache: maven
+
+      - name: Build plugin
+        run: >-
+          ./mvnw -pl com.microsoft.java.debug.target,com.microsoft.java.debug.core,com.microsoft.java.debug.plugin
+          package -DskipTests -Dcheckstyle.skip=true -B
+
+      - name: Stage artifact
+        run: cp com.microsoft.java.debug.plugin/target/com.microsoft.java.debug.plugin-0.53.2.jar com.microsoft.java.debug.plugin-0.53.2-sisyphusend.jar
+
+      - name: Move release tag to this commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -f 0.53.2-patched "$GITHUB_SHA"
+          git push -f origin 0.53.2-patched
+
+      - name: Upload jar to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: gh release upload 0.53.2-patched com.microsoft.java.debug.plugin-0.53.2-sisyphusend.jar --clobber
