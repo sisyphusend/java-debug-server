@@ -44,7 +44,11 @@ public final class DebugSettings {
     public int limitOfVariablesPerJdwpRequest = 100;
     public int jdwpRequestTimeout = 3000;
     public AsyncMode asyncJDWP = AsyncMode.OFF;
-    public Switch debugSupportOnDecompiledSource = Switch.OFF;
+    // Zed local build: enabled by default so that stack frames paused in classes without
+    // source attachment (decompiled sources materialized to cache files) get their line
+    // numbers remapped to the decompiled text. For classes with source attachment the
+    // mapping APIs return null and this flag has no effect.
+    public Switch debugSupportOnDecompiledSource = Switch.ON;
 
     public static DebugSettings getCurrent() {
         return current;
